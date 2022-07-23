@@ -466,7 +466,7 @@ pub fn assert_is_valid_governance_config(
 pub fn assert_is_valid_vote_threshold(vote_threshold: &VoteThreshold) -> Result<(), ProgramError> {
     match *vote_threshold {
         VoteThreshold::YesVotePercentage(yes_vote_threshold_percentage) => {
-            if !(1..=100).contains(&yes_vote_threshold_percentage) {
+            if !(0..=100).contains(&yes_vote_threshold_percentage) {
                 return Err(GovernanceError::InvalidVoteThresholdPercentage.into());
             }
         }

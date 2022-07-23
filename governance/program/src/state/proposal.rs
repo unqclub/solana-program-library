@@ -697,9 +697,9 @@ impl ProposalV2 {
         }
 
         // For security purposes only proposals with the reject option can have executable instructions
-        if self.deny_vote_weight.is_none() {
-            return Err(GovernanceError::ProposalIsNotExecutable.into());
-        }
+        // if self.deny_vote_weight.is_none() {
+        //     return Err(GovernanceError::ProposalIsNotExecutable.into());
+        // }
 
         Ok(())
     }

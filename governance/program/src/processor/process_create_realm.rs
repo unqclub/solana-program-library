@@ -15,7 +15,8 @@ use crate::{
         enums::GovernanceAccountType,
         realm::{
             assert_valid_realm_config_args, get_governing_token_holding_address_seeds,
-            get_realm_address_seeds, RealmConfig, RealmConfigArgs, RealmV2,
+            get_realm_address_seeds, get_realm_data_for_authority, RealmConfig, RealmConfigArgs,
+            RealmV2,
         },
         realm_config::{get_realm_config_address_seeds, RealmConfigAccount},
     },
@@ -41,8 +42,10 @@ pub fn process_create_realm(
 
     let rent_sysvar_info = next_account_info(account_info_iter)?; // 7
     let rent = &Rent::from_account_info(rent_sysvar_info)?;
+    let club_realm_info = next_account_info(account_info_iter)?;
 
     if !realm_info.data_is_empty() {
+        // get_realm_data_for_authority(program_id, realm_info, realm_authority)
         return Err(GovernanceError::RealmAlreadyExists.into());
     }
 
