@@ -52,7 +52,9 @@ pub fn process_create_realm(
         return Err(GovernanceError::WrongOgRealmAccount.into());
     }
 
-    if !og_realm_info.data_is_empty() {
+    if og_realm_info.data_is_empty() {
+        return Err(GovernanceError::OgRealmNotInitialized.into());
+    } else {
         let og_realm_data = try_from_slice_unchecked::<RealmV2>(&og_realm_info.try_borrow_data()?)?;
         if &og_realm_data.authority.unwrap() != payer_info.key {
             return Err(GovernanceError::AuthorityMissmatch.into());
@@ -60,7 +62,6 @@ pub fn process_create_realm(
     }
 
     if !club_realm_info.data_is_empty() {
-        // get_realm_data_for_authority(program_id, realm_info, realm_authority)
         return Err(GovernanceError::RealmAlreadyExists.into());
     }
 
@@ -83,8 +84,8 @@ pub fn process_create_realm(
     )?;
 
     let council_token_mint_address = if config_args.use_council_mint {
-        let council_token_mint_info = next_account_info(account_info_iter)?; // 8
-        let council_token_holding_info = next_account_info(account_info_iter)?; // 9
+        let council_token_mint_info = next_account_info(account_info_iter)?; // 9
+        let council_token_holding_info = next_account_info(account_info_iter)?; // 10
 
         create_spl_token_account_signed(
             payer_info,
@@ -110,14 +111,14 @@ pub fn process_create_realm(
     // Setup config for addins
 
     let community_voter_weight_addin = if config_args.use_community_voter_weight_addin {
-        let community_voter_weight_addin_info = next_account_info(account_info_iter)?; // 10
+        let community_voter_weight_addin_info = next_account_info(account_info_iter)?; // 11
         Some(*community_voter_weight_addin_info.key)
     } else {
         None
     };
 
     let max_community_voter_weight_addin = if config_args.use_max_community_voter_weight_addin {
-        let max_community_voter_weight_addin_info = next_account_info(account_info_iter)?; // 11
+        let max_community_voter_weight_addin_info = next_account_info(account_info_iter)?; // 12
         Some(*max_community_voter_weight_addin_info.key)
     } else {
         None
@@ -126,7 +127,7 @@ pub fn process_create_realm(
     if config_args.use_community_voter_weight_addin
         || config_args.use_max_community_voter_weight_addin
     {
-        let realm_config_info = next_account_info(account_info_iter)?; // 12
+        let realm_config_info = next_account_info(account_info_iter)?; // 13
 
         let realm_config_data = RealmConfigAccount {
             account_type: GovernanceAccountType::RealmConfig,

@@ -414,6 +414,10 @@ pub enum GovernanceError {
     /// Missmatch of authority for OG Realm account and Club realm account
     #[error("Missmatch of authority for OG Realm account and Club realm account")]
     AuthorityMissmatch,
+
+    /// OG Realm Account needs to be initialized
+    #[error("OG Realm Account needs to be initialized!")]
+    OgRealmNotInitialized,
 }
 
 impl PrintProgramError for GovernanceError {
