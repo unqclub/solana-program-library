@@ -2,6 +2,7 @@
 //! A Governance program for the Solana blockchain.
 
 pub mod addins;
+pub mod constants;
 pub mod entrypoint;
 pub mod error;
 pub mod instruction;

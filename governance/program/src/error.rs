@@ -406,6 +406,14 @@ pub enum GovernanceError {
     /// Cannot Relinquish in Finalizing state
     #[error("Cannot Relinquish in Finalizing state")]
     CannotRelinquishInFinalizingState,
+
+    /// Wrong account passed as OG Realm account
+    #[error("Wrong account passed as OG Realm account")]
+    WrongOgRealmAccount,
+
+    /// Missmatch of authority for OG Realm account and Club realm account
+    #[error("Missmatch of authority for OG Realm account and Club realm account")]
+    AuthorityMissmatch,
 }
 
 impl PrintProgramError for GovernanceError {

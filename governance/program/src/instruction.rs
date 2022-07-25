@@ -564,6 +564,95 @@ pub fn create_realm(
     }
 }
 
+/// Creates CreateClubRealm instruction
+#[allow(clippy::too_many_arguments)]
+pub fn create_club_realm(
+    program_id: &Pubkey,
+    // Accounts
+    realm_authority: &Pubkey,
+    community_token_mint: &Pubkey,
+    payer: &Pubkey,
+    council_token_mint: Option<Pubkey>,
+    community_voter_weight_addin: Option<Pubkey>,
+    max_community_voter_weight_addin: Option<Pubkey>,
+    og_realm: &Pubkey,
+    // Args
+    name: String,
+    min_community_weight_to_create_governance: u64,
+    community_mint_max_vote_weight_source: MintMaxVoteWeightSource,
+) -> Instruction {
+    let realm_address = get_realm_address(program_id, &name);
+    let community_token_holding_address =
+        get_governing_token_holding_address(program_id, &realm_address, community_token_mint);
+
+    let mut accounts = vec![
+        AccountMeta::new(realm_address, false),
+        AccountMeta::new_readonly(*realm_authority, false),
+        AccountMeta::new_readonly(*community_token_mint, false),
+        AccountMeta::new(community_token_holding_address, false),
+        AccountMeta::new(*payer, true),
+        AccountMeta::new_readonly(system_program::id(), false),
+        AccountMeta::new_readonly(spl_token::id(), false),
+        AccountMeta::new_readonly(sysvar::rent::id(), false),
+        AccountMeta::new_readonly(*og_realm, false),
+    ];
+
+    let use_council_mint = if let Some(council_token_mint) = council_token_mint {
+        let council_token_holding_address =
+            get_governing_token_holding_address(program_id, &realm_address, &council_token_mint);
+
+        accounts.push(AccountMeta::new_readonly(council_token_mint, false));
+        accounts.push(AccountMeta::new(council_token_holding_address, false));
+        true
+    } else {
+        false
+    };
+
+    let use_community_voter_weight_addin =
+        if let Some(community_voter_weight_addin) = community_voter_weight_addin {
+            accounts.push(AccountMeta::new_readonly(
+                community_voter_weight_addin,
+                false,
+            ));
+            true
+        } else {
+            false
+        };
+
+    let use_max_community_voter_weight_addin =
+        if let Some(max_community_voter_weight_addin) = max_community_voter_weight_addin {
+            accounts.push(AccountMeta::new_readonly(
+                max_community_voter_weight_addin,
+                false,
+            ));
+            true
+        } else {
+            false
+        };
+
+    if use_community_voter_weight_addin || use_max_community_voter_weight_addin {
+        let realm_config_address = get_realm_config_address(program_id, &realm_address);
+        accounts.push(AccountMeta::new(realm_config_address, false));
+    }
+
+    let instruction = GovernanceInstruction::CreateRealm {
+        config_args: RealmConfigArgs {
+            use_council_mint,
+            min_community_weight_to_create_governance,
+            community_mint_max_vote_weight_source,
+            use_community_voter_weight_addin,
+            use_max_community_voter_weight_addin,
+        },
+        name,
+    };
+
+    Instruction {
+        program_id: *program_id,
+        accounts,
+        data: instruction.try_to_vec().unwrap(),
+    }
+}
+
 /// Creates DepositGoverningTokens instruction
 #[allow(clippy::too_many_arguments)]
 pub fn deposit_governing_tokens(
