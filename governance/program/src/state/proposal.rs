@@ -589,7 +589,7 @@ impl ProposalV2 {
         //       and I decided to fight it another day
         if self.vote_type != VoteType::SingleChoice
             // Tipping should not be allowed for opinion only proposals (surveys without rejection) to allow everybody's voice to be heard
-            || self.deny_vote_weight.is_none()
+            // || self.deny_vote_weight.is_none()
             || self.options.len() != 1
         {
             return None;
@@ -598,7 +598,12 @@ impl ProposalV2 {
         let mut yes_option = &mut self.options[0];
 
         let yes_vote_weight = yes_option.vote_weight;
-        let deny_vote_weight = self.deny_vote_weight.unwrap();
+
+        let mut deny_vote_weight: u64 = 0;
+
+        if let Some(deny_weight) = self.deny_vote_weight {
+            deny_vote_weight = deny_weight;
+        }
 
         if yes_vote_weight == max_voter_weight {
             yes_option.vote_result = OptionVoteResult::Succeeded;
