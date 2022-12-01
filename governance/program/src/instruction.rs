@@ -402,7 +402,7 @@ pub enum GovernanceInstruction {
     SetGovernanceConfig {
         #[allow(dead_code)]
         /// New governance config
-        config: GovernanceConfig,
+        config: Vec<GovernanceConfig>,
     },
 
     /// Flags a transaction and its parent Proposal with error status
@@ -1363,7 +1363,7 @@ pub fn set_governance_config(
     // Accounts
     governance: &Pubkey,
     // Args
-    config: GovernanceConfig,
+    config: Vec<GovernanceConfig>,
 ) -> Instruction {
     let accounts = vec![AccountMeta::new(*governance, true)];
 

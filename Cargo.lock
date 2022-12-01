@@ -5825,6 +5825,7 @@ dependencies = [
  "base64 0.13.0",
  "bincode",
  "borsh",
+ "itertools",
  "num-derive",
  "num-traits",
  "proptest",

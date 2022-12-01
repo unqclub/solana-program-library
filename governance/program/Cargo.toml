@@ -24,6 +24,7 @@ spl-token = { version = "3.3", path = "../../token/program", features = [ "no-en
 spl-governance-tools= { version = "0.1.2", path ="../tools"}
 spl-governance-addin-api= { version = "0.1.2", path ="../addin-api"}
 thiserror = "1.0"
+itertools = "0.10.3"
 
 [dev-dependencies]
 assert_matches = "1.5.0"

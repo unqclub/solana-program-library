@@ -1,10 +1,7 @@
 //! Program state processor
 
-use solana_program::{
-    account_info::{next_account_info, AccountInfo},
-    entrypoint::ProgramResult,
-    pubkey::Pubkey,
-};
+use itertools::*;
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey};
 
 use crate::{
     error::GovernanceError,
@@ -15,20 +12,28 @@ use crate::{
 pub fn process_set_governance_config(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
-    config: GovernanceConfig,
+    config: Vec<GovernanceConfig>,
 ) -> ProgramResult {
-    let account_info_iter = &mut accounts.iter();
-
-    let governance_info = next_account_info(account_info_iter)?; // 0
-
     // Only governance PDA via a proposal can authorize change to its own config
-    if !governance_info.is_signer {
-        return Err(GovernanceError::GovernancePdaMustSign.into());
-    };
+    // if !governance_info.is_signer {
+    //     return Err(GovernanceError::GovernancePdaMustSign.into());
+    // };
+    let account_info_iter = &mut accounts.iter();
+    let configs = &mut config.iter();
 
-    assert_is_valid_governance_config(&config)?;
-
-    let mut governance_data = get_governance_data(program_id, governance_info)?;
+    for (governance, governed) in account_info_iter.tuples() {
+        // todo validate that the given governance account is governing the governed account
+        if !governed.is_signer {
+            return Err(GovernanceError::GovernancePdaMustSign.into());
+        };
+        let cfg = configs
+            .next()
+            .ok_or(GovernanceError::InvalidTransactionIndex)?;
+        assert_is_valid_governance_config(cfg)?;
+        let mut governance_data = get_governance_data(program_id, governance)?;
+        governance_data.config = cfg.clone();
+        governance_data.serialize(&mut *governance.data.borrow_mut())?;
+    }
 
     // Until we have Veto implemented it's better to allow config change as the defence of last resort against governance attacks
     // Note: Config change leaves voting proposals in unpredictable state and it's DAOs responsibility
@@ -39,10 +44,6 @@ pub fn process_set_governance_config(
     // if governance_data.voting_proposal_count > 0 {
     //     return Err(GovernanceError::GovernanceConfigChangeNotAllowed.into());
     // }
-
-    governance_data.config = config;
-
-    governance_data.serialize(&mut *governance_info.data.borrow_mut())?;
 
     Ok(())
 }
