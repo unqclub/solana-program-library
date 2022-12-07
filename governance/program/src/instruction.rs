@@ -1364,6 +1364,7 @@ pub fn set_governance_config(
     governance: &Pubkey,
     // Args
     config: Vec<GovernanceConfig>,
+    _seeds: Vec<Vec<Vec<u8>>>,
 ) -> Instruction {
     let accounts = vec![AccountMeta::new(*governance, true)];
 
