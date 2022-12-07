@@ -403,6 +403,9 @@ pub enum GovernanceInstruction {
         #[allow(dead_code)]
         /// New governance config
         config: Vec<GovernanceConfig>,
+        #[allow(dead_code)]
+        /// Seeds from which the governed accounts are derived
+        seeds: Vec<Vec<Vec<u8>>>,
     },
 
     /// Flags a transaction and its parent Proposal with error status
@@ -1364,11 +1367,11 @@ pub fn set_governance_config(
     governance: &Pubkey,
     // Args
     config: Vec<GovernanceConfig>,
-    _seeds: Vec<Vec<Vec<u8>>>,
+    seeds: Vec<Vec<Vec<u8>>>,
 ) -> Instruction {
     let accounts = vec![AccountMeta::new(*governance, true)];
 
-    let instruction = GovernanceInstruction::SetGovernanceConfig { config };
+    let instruction = GovernanceInstruction::SetGovernanceConfig { config, seeds };
 
     Instruction {
         program_id: *program_id,

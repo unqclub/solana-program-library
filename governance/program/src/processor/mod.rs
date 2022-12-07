@@ -191,7 +191,7 @@ pub fn process_instruction(
             process_execute_transaction(program_id, accounts)
         }
 
-        GovernanceInstruction::SetGovernanceConfig { config } => {
+        GovernanceInstruction::SetGovernanceConfig { config, .. } => {
             process_set_governance_config(program_id, accounts, config)
         }
 
