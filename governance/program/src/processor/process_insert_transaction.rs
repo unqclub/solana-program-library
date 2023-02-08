@@ -2,9 +2,11 @@
 
 use std::cmp::Ordering;
 
+use delegation_manager::check_authorization;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
+    msg,
     pubkey::Pubkey,
     rent::Rent,
     sysvar::Sysvar,
@@ -67,8 +69,32 @@ pub fn process_insert_transaction(
         token_owner_record_info,
         &proposal_data.token_owner_record,
     )?;
+    msg!("Dosao");
+    let master_info = account_info_iter.next(); //8
+    if let Some(master) = master_info {
+        msg!("Check1");
+        let delegation_info = next_account_info(account_info_iter)?; //9
+        msg!("Check2");
+        check_authorization(master, payer_info, Some(delegation_info))?;
+        msg!("Check3");
+        if payer_info.is_signer {
+            if &token_owner_record_data.governing_token_owner != governance_authority_info.key {
+                return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
+            }
 
-    token_owner_record_data.assert_token_owner_or_delegate_is_signer(governance_authority_info)?;
+            if let Some(governance_delegate) = token_owner_record_data.governance_delegate {
+                if &governance_delegate == governance_authority_info.key {
+                    return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
+                }
+            };
+        } else {
+            return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
+        }
+        msg!("Check4");
+    } else {
+        token_owner_record_data
+            .assert_token_owner_or_delegate_is_signer(governance_authority_info)?;
+    }
 
     let option = &mut proposal_data.options[option_index as usize];
 

@@ -1,9 +1,11 @@
 //! Program state processor
 
+use delegation_manager::check_authorization;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     clock::Clock,
     entrypoint::ProgramResult,
+    msg,
     pubkey::Pubkey,
     rent::Rent,
     sysvar::Sysvar,
@@ -77,10 +79,6 @@ pub fn process_create_proposal(
         realm_info.key,
     )?;
 
-    // Proposal owner (TokenOwner) or its governance_delegate must sign this transaction
-    proposal_owner_record_data
-        .assert_token_owner_or_delegate_is_signer(governance_authority_info)?;
-
     let realm_config_info = next_account_info(account_info_iter)?; // 10
 
     let voter_weight = proposal_owner_record_data.resolve_voter_weight(
@@ -92,6 +90,40 @@ pub fn process_create_proposal(
         VoterWeightAction::CreateProposal,
         governance_info.key,
     )?;
+
+    //proveriti da li je master isti kao governance authority info
+    msg!("Dosao");
+    let master_info = account_info_iter.next(); //8
+    if let Some(master) = master_info {
+        msg!("Check1");
+        let delegation_info = next_account_info(account_info_iter)?; //9
+        msg!("Check2");
+        check_authorization(master, payer_info, Some(delegation_info))?;
+        msg!("Check3");
+        if payer_info.is_signer {
+            if proposal_owner_record_data.governing_token_owner != *governance_authority_info.key {
+                return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
+            }
+
+            if let Some(governance_delegate) = proposal_owner_record_data.governance_delegate {
+                if &governance_delegate == governance_authority_info.key {
+                    return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
+                }
+            };
+        } else {
+            return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
+        }
+
+        // proposal_owner_record_data.assert_token_owner_or_delegate_is_signer(payer_info)?;
+        msg!("Check4");
+    } else {
+        proposal_owner_record_data
+            .assert_token_owner_or_delegate_is_signer(governance_authority_info)?;
+    }
+    // Proposal owner (TokenOwner) or its governance_delegate must sign this transaction
+
+    //ako nije uraditi check authorization i proslediti u assert mastera
+    //ako nije u assert ide governance_authority_info
 
     // Ensure proposal owner (TokenOwner) has enough tokens to create proposal and no outstanding proposals
     proposal_owner_record_data.assert_can_create_proposal(
