@@ -5,7 +5,6 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     clock::Clock,
     entrypoint::ProgramResult,
-    msg,
     pubkey::Pubkey,
     rent::Rent,
     sysvar::Sysvar,
@@ -91,15 +90,10 @@ pub fn process_create_proposal(
         governance_info.key,
     )?;
 
-    //proveriti da li je master isti kao governance authority info
-    msg!("Dosao");
+    // Proposal owner (TokenOwner) or its governance_delegate or representative must sign this transaction
     let delegation_info = account_info_iter.next(); //9
     if let Some(delegation) = delegation_info {
-        msg!("Check1");
-        // let delegation_info = next_account_info(account_info_iter)?; //9
-        msg!("Check2");
         check_authorization(governance_authority_info, payer_info, Some(delegation))?;
-        msg!("Check3");
         if payer_info.is_signer {
             if proposal_owner_record_data.governing_token_owner != *governance_authority_info.key {
                 return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
@@ -113,15 +107,10 @@ pub fn process_create_proposal(
         } else {
             return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
         }
-        msg!("Check4");
     } else {
         proposal_owner_record_data
             .assert_token_owner_or_delegate_is_signer(governance_authority_info)?;
     }
-    // Proposal owner (TokenOwner) or its governance_delegate must sign this transaction
-
-    //ako nije uraditi check authorization i proslediti u assert mastera
-    //ako nije u assert ide governance_authority_info
 
     // Ensure proposal owner (TokenOwner) has enough tokens to create proposal and no outstanding proposals
     proposal_owner_record_data.assert_can_create_proposal(

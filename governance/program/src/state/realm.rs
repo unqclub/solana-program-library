@@ -8,7 +8,6 @@ use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     borsh::try_from_slice_unchecked,
-    msg,
     program_error::ProgramError,
     program_pack::IsInitialized,
     pubkey::Pubkey,
@@ -238,10 +237,6 @@ impl RealmV2 {
         account_info_iter: &mut Iter<AccountInfo>,
     ) -> Result<(), ProgramError> {
         // Check if create_authority_info is realm_authority and if yes then it must signed the transaction
-        //set create_authority to master
-
-        //proveriti da li je realm auth isti kao create_authority_info
-        //ako nije, proveriti da li je
 
         if self.authority == Some(*create_authority_info.key) {
             return if !create_authority_info.is_signer {
@@ -251,7 +246,7 @@ impl RealmV2 {
             };
         }
 
-        // If realm_authority hasn't signed then check if TokenOwner or Delegate signed and can crate governance
+        // If realm_authority hasn't signed then check if TokenOwner or Delegate or Representative signed and can crate governance
         let token_owner_record_data =
             get_token_owner_record_data_for_realm(program_id, token_owner_record_info, realm)?;
 
@@ -262,21 +257,17 @@ impl RealmV2 {
             check_authorization(master, create_authority_info, Some(delegation_info))?;
             if create_authority_info.is_signer {
                 if token_owner_record_data.governing_token_owner != *master.key {
-                    msg!("Greska 1");
                     return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
                 }
 
                 if let Some(governance_delegate) = token_owner_record_data.governance_delegate {
                     if &governance_delegate == master.key {
-                        msg!("Greska 2");
                         return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
                     }
                 };
             } else {
-                msg!("Greska 3");
                 return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
             }
-            msg!("Check4");
         } else {
             token_owner_record_data
                 .assert_token_owner_or_delegate_is_signer(create_authority_info)?;

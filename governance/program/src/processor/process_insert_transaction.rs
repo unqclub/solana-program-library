@@ -6,7 +6,6 @@ use delegation_manager::check_authorization;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
-    msg,
     pubkey::Pubkey,
     rent::Rent,
     sysvar::Sysvar,
@@ -69,32 +68,23 @@ pub fn process_insert_transaction(
         token_owner_record_info,
         &proposal_data.token_owner_record,
     )?;
-    msg!("Dosao");
+
     let delegation_info = account_info_iter.next(); //9
     if let Some(delegation) = delegation_info {
-        msg!("Check1");
-        // let delegation_info = next_account_info(account_info_iter)?; //9
-        msg!("Check2");
         check_authorization(governance_authority_info, payer_info, Some(delegation))?;
-        msg!("Check3");
         if payer_info.is_signer {
-            msg!("Check4");
             if token_owner_record_data.governing_token_owner != *governance_authority_info.key {
-                msg!("Greska 1");
                 return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
             }
 
             if let Some(governance_delegate) = token_owner_record_data.governance_delegate {
                 if &governance_delegate != governance_authority_info.key {
-                    msg!("Greska 2");
                     return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
                 }
             };
         } else {
-            msg!("Greska 3");
             return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
         }
-        msg!("Check5");
     } else {
         token_owner_record_data
             .assert_token_owner_or_delegate_is_signer(governance_authority_info)?;

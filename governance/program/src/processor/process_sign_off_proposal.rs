@@ -5,7 +5,6 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     clock::Clock,
     entrypoint::ProgramResult,
-    msg,
     pubkey::Pubkey,
     sysvar::Sysvar,
 };
@@ -52,31 +51,23 @@ pub fn process_sign_off_proposal(program_id: &Pubkey, accounts: &[AccountInfo]) 
             &proposal_data.token_owner_record,
         )?;
 
-        msg!("Dosao");
         let master_info = account_info_iter.next(); //5
         if let Some(master) = master_info {
-            msg!("Check1");
             let delegation_info = next_account_info(account_info_iter)?; //6
-            msg!("Check2");
             check_authorization(master, signatory_info, Some(delegation_info))?;
-            msg!("Check3");
             if signatory_info.is_signer {
                 if proposal_owner_record_data.governing_token_owner != *master.key {
-                    msg!("Greska 1");
                     return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
                 }
 
                 if let Some(governance_delegate) = proposal_owner_record_data.governance_delegate {
                     if &governance_delegate == master.key {
-                        msg!("Greska 2");
                         return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
                     }
                 };
             } else {
-                msg!("Greska 3");
                 return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
             }
-            msg!("Check4");
         } else {
             proposal_owner_record_data.assert_token_owner_or_delegate_is_signer(signatory_info)?;
         }
