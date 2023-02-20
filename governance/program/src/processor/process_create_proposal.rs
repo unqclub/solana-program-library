@@ -93,12 +93,12 @@ pub fn process_create_proposal(
 
     //proveriti da li je master isti kao governance authority info
     msg!("Dosao");
-    let master_info = account_info_iter.next(); //8
-    if let Some(master) = master_info {
+    let delegation_info = account_info_iter.next(); //9
+    if let Some(delegation) = delegation_info {
         msg!("Check1");
-        let delegation_info = next_account_info(account_info_iter)?; //9
+        // let delegation_info = next_account_info(account_info_iter)?; //9
         msg!("Check2");
-        check_authorization(master, payer_info, Some(delegation_info))?;
+        check_authorization(governance_authority_info, payer_info, Some(delegation))?;
         msg!("Check3");
         if payer_info.is_signer {
             if proposal_owner_record_data.governing_token_owner != *governance_authority_info.key {
@@ -113,8 +113,6 @@ pub fn process_create_proposal(
         } else {
             return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
         }
-
-        // proposal_owner_record_data.assert_token_owner_or_delegate_is_signer(payer_info)?;
         msg!("Check4");
     } else {
         proposal_owner_record_data
