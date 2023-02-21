@@ -22,15 +22,14 @@ pub fn process_set_governance_config(
     let configs = &mut config.iter();
 
     for (governance, governed) in account_info_iter.tuples() {
-        // todo validate that the given governance account is governing the governed account
-        if !governed.is_signer {
+        let mut governance_data = get_governance_data(program_id, governance)?;
+        if !governed.is_signer && &governance_data.governed_account != governed.key {
             return Err(GovernanceError::GovernancePdaMustSign.into());
         };
         let cfg = configs
             .next()
             .ok_or(GovernanceError::InvalidTransactionIndex)?;
         assert_is_valid_governance_config(cfg)?;
-        let mut governance_data = get_governance_data(program_id, governance)?;
 
         if governance_data.voting_proposal_count != 0 {
             return Err(GovernanceError::GovernanceConfigChangeNotAllowed.into());
