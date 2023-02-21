@@ -31,7 +31,12 @@ pub fn process_set_governance_config(
             .ok_or(GovernanceError::InvalidTransactionIndex)?;
         assert_is_valid_governance_config(cfg)?;
         let mut governance_data = get_governance_data(program_id, governance)?;
+
+        if governance_data.voting_proposal_count != 0 {
+            return Err(GovernanceError::GovernanceConfigChangeNotAllowed.into());
+        }
         governance_data.config = cfg.clone();
+
         governance_data.serialize(&mut *governance.data.borrow_mut())?;
     }
 
