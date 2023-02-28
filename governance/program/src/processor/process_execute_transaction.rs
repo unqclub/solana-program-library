@@ -10,16 +10,20 @@ use solana_program::{
     sysvar::Sysvar,
 };
 
-use crate::state::{
-    enums::{ProposalState, TransactionExecutionStatus},
-    governance::get_governance_data,
-    native_treasury::get_native_treasury_address_seeds,
-    proposal::{get_proposal_data_for_governance, OptionVoteResult},
-    proposal_transaction::get_proposal_transaction_data_for_proposal,
+use crate::{
+    constants::UNQ_CLUB_PROGRAM,
+    state::{
+        enums::{ProposalState, TransactionExecutionStatus},
+        governance::get_governance_data,
+        native_treasury::get_native_treasury_address_seeds,
+        proposal::{get_proposal_data_for_governance, OptionVoteResult},
+        proposal_transaction::get_proposal_transaction_data_for_proposal,
+    },
 };
 
 /// Processes ExecuteTransaction instruction
 pub fn process_execute_transaction(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
+    let unq_club_program: Pubkey = UNQ_CLUB_PROGRAM.parse().unwrap();
     let account_info_iter = &mut accounts.iter();
 
     let governance_info = next_account_info(account_info_iter)?; // 0
@@ -54,32 +58,36 @@ pub fn process_execute_transaction(program_id: &Pubkey, accounts: &[AccountInfo]
     // TODO: Optimize the invocation to split the provided accounts for each individual instruction
     let instruction_account_infos = account_info_iter.as_slice();
 
-    let mut signers_seeds: Vec<&[&[u8]]> = vec![];
+    // If the proposal's execution targets club_program, we don't need to invoke_signed, we just need to check
+    // that the proposal has been voted on successfully and change status to executed. Meanwhile in the
+    // continuation of the execute_proposal ix on the club_program side we can continue the logic that changes club_program's state.
+    if instruction_account_infos[0].key != &unq_club_program {
+        let mut signers_seeds: Vec<&[&[u8]]> = vec![];
+        // Sign the transaction using the governance PDA
+        let mut governance_seeds = governance_data.get_governance_address_seeds()?.to_vec();
+        let (_, bump_seed) = Pubkey::find_program_address(&governance_seeds, program_id);
+        let bump = &[bump_seed];
+        governance_seeds.push(bump);
 
-    // Sign the transaction using the governance PDA
-    let mut governance_seeds = governance_data.get_governance_address_seeds()?.to_vec();
-    let (_, bump_seed) = Pubkey::find_program_address(&governance_seeds, program_id);
-    let bump = &[bump_seed];
-    governance_seeds.push(bump);
+        signers_seeds.push(&governance_seeds[..]);
 
-    signers_seeds.push(&governance_seeds[..]);
+        // Sign the transaction using the governance treasury PDA if required by the instruction
+        let mut treasury_seeds = get_native_treasury_address_seeds(governance_info.key).to_vec();
+        let (treasury_address, treasury_bump_seed) =
+            Pubkey::find_program_address(&treasury_seeds, program_id);
+        let treasury_bump = &[treasury_bump_seed];
 
-    // Sign the transaction using the governance treasury PDA if required by the instruction
-    let mut treasury_seeds = get_native_treasury_address_seeds(governance_info.key).to_vec();
-    let (treasury_address, treasury_bump_seed) =
-        Pubkey::find_program_address(&treasury_seeds, program_id);
-    let treasury_bump = &[treasury_bump_seed];
+        if instruction_account_infos
+            .iter()
+            .any(|a| a.key == &treasury_address)
+        {
+            treasury_seeds.push(treasury_bump);
+            signers_seeds.push(&treasury_seeds[..]);
+        }
 
-    if instruction_account_infos
-        .iter()
-        .any(|a| a.key == &treasury_address)
-    {
-        treasury_seeds.push(treasury_bump);
-        signers_seeds.push(&treasury_seeds[..]);
-    }
-
-    for instruction in instructions {
-        invoke_signed(&instruction, instruction_account_infos, &signers_seeds[..])?;
+        for instruction in instructions {
+            invoke_signed(&instruction, instruction_account_infos, &signers_seeds[..])?;
+        }
     }
 
     // Update proposal and instruction accounts
