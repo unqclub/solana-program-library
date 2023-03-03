@@ -2,7 +2,6 @@
 
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
-    borsh::try_from_slice_unchecked,
     entrypoint::ProgramResult,
     pubkey::Pubkey,
     rent::Rent,
@@ -11,13 +10,12 @@ use solana_program::{
 use spl_governance_tools::account::create_and_serialize_account_signed;
 
 use crate::{
-    constants::OG_SPL_GOVERNANCE,
     error::GovernanceError,
     state::{
         enums::GovernanceAccountType,
         realm::{
             assert_valid_realm_config_args, get_governing_token_holding_address_seeds,
-            get_realm_address, get_realm_address_seeds, RealmConfig, RealmConfigArgs, RealmV2,
+            get_realm_address_seeds, RealmConfig, RealmConfigArgs, RealmV2,
         },
         realm_config::{get_realm_config_address_seeds, RealmConfigAccount},
     },
@@ -42,24 +40,9 @@ pub fn process_create_realm(
     let spl_token_info = next_account_info(account_info_iter)?; // 6
     let rent_sysvar_info = next_account_info(account_info_iter)?; // 7
     let rent = &Rent::from_account_info(rent_sysvar_info)?;
-    let og_realm_info = next_account_info(account_info_iter)?; // 8
 
     // First thing to do is compare the two addresses and make sure they are derived
     // from the same name but different program addresses (one OG one ours)
-
-    if og_realm_info.key != &get_realm_address(&OG_SPL_GOVERNANCE.parse::<Pubkey>().unwrap(), &name)
-    {
-        return Err(GovernanceError::WrongOgRealmAccount.into());
-    }
-
-    if og_realm_info.data_is_empty() {
-        return Err(GovernanceError::OgRealmNotInitialized.into());
-    } else {
-        let og_realm_data = try_from_slice_unchecked::<RealmV2>(&og_realm_info.try_borrow_data()?)?;
-        if &og_realm_data.authority.unwrap() != payer_info.key {
-            return Err(GovernanceError::AuthorityMissmatch.into());
-        };
-    }
 
     if !club_realm_info.data_is_empty() {
         return Err(GovernanceError::RealmAlreadyExists.into());
