@@ -418,6 +418,10 @@ pub enum GovernanceError {
     /// OG Realm Account needs to be initialized
     #[error("OG Realm Account needs to be initialized!")]
     OgRealmNotInitialized,
+
+    /// OG Realm Account needs to be initialized
+    #[error("Signer must be a representative of governance authority")]
+    RepresentativeMustSign,
 }
 
 impl PrintProgramError for GovernanceError {

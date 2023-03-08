@@ -95,19 +95,8 @@ pub fn process_cast_vote(
     if payer_info.key != governance_authority_info.key {
         let delegation_info = next_account_info(account_info_iter)?;
         check_authorization(governance_authority_info, payer_info, Some(delegation_info))?;
-        if payer_info.is_signer {
-            if voter_token_owner_record_data.governing_token_owner != *governance_authority_info.key
-            {
-                return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
-            }
-
-            if let Some(governance_delegate) = voter_token_owner_record_data.governance_delegate {
-                if &governance_delegate == governance_authority_info.key {
-                    return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
-                }
-            };
-        } else {
-            return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
+        if !payer_info.is_signer {
+            return Err(GovernanceError::RepresentativeMustSign.into());
         }
     } else {
         voter_token_owner_record_data

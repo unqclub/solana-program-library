@@ -255,18 +255,8 @@ impl RealmV2 {
             let delegation_info = next_account_info(account_info_iter)?; //6
 
             check_authorization(master, create_authority_info, Some(delegation_info))?;
-            if create_authority_info.is_signer {
-                if token_owner_record_data.governing_token_owner != *master.key {
-                    return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
-                }
-
-                if let Some(governance_delegate) = token_owner_record_data.governance_delegate {
-                    if &governance_delegate == master.key {
-                        return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
-                    }
-                };
-            } else {
-                return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
+            if !create_authority_info.is_signer {
+                return Err(GovernanceError::RealmAuthorityMustSign.into());
             }
         } else {
             token_owner_record_data

@@ -55,18 +55,8 @@ pub fn process_sign_off_proposal(program_id: &Pubkey, accounts: &[AccountInfo]) 
         if let Some(master) = master_info {
             let delegation_info = next_account_info(account_info_iter)?; //6
             check_authorization(master, signatory_info, Some(delegation_info))?;
-            if signatory_info.is_signer {
-                if proposal_owner_record_data.governing_token_owner != *master.key {
-                    return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
-                }
-
-                if let Some(governance_delegate) = proposal_owner_record_data.governance_delegate {
-                    if &governance_delegate == master.key {
-                        return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
-                    }
-                };
-            } else {
-                return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
+            if !signatory_info.is_signer {
+                return Err(GovernanceError::RepresentativeMustSign.into());
             }
         } else {
             proposal_owner_record_data.assert_token_owner_or_delegate_is_signer(signatory_info)?;
