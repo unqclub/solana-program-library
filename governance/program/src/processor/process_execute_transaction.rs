@@ -23,7 +23,8 @@ use crate::{
 
 /// Processes ExecuteTransaction instruction
 pub fn process_execute_transaction(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
-    let unq_club_program: Pubkey = UNQ_CLUB_PROGRAM.parse().unwrap();
+    let unq_club_program_syn: Pubkey = UNQ_CLUB_PROGRAM.parse().unwrap();
+
     let account_info_iter = &mut accounts.iter();
 
     let governance_info = next_account_info(account_info_iter)?; // 0
@@ -61,7 +62,7 @@ pub fn process_execute_transaction(program_id: &Pubkey, accounts: &[AccountInfo]
     // If the proposal's execution targets club_program, we don't need to invoke_signed, we just need to check
     // that the proposal has been voted on successfully and change status to executed. Meanwhile in the
     // continuation of the execute_proposal ix on the club_program side we can continue the logic that changes club_program's state.
-    if instruction_account_infos[0].key != &unq_club_program {
+    if instruction_account_infos[0].key != &unq_club_program_syn {
         let mut signers_seeds: Vec<&[&[u8]]> = vec![];
         // Sign the transaction using the governance PDA
         let mut governance_seeds = governance_data.get_governance_address_seeds()?.to_vec();
