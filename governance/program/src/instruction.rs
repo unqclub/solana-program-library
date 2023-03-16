@@ -478,6 +478,13 @@ pub enum GovernanceInstruction {
     ///  2. `[signer]` Payer
     ///  3. `[]` System
     CreateNativeTreasury,
+
+    /// Creates a new Governance account but can be invoked only by ClubWallet
+    CreateClubGovernance {
+        /// Governance config
+        #[allow(dead_code)]
+        config: GovernanceConfig,
+    },
 }
 
 /// Creates CreateRealm instruction
@@ -1622,6 +1629,36 @@ pub fn create_native_treasury(
     ];
 
     let instruction = GovernanceInstruction::CreateNativeTreasury {};
+
+    Instruction {
+        program_id: *program_id,
+        accounts,
+        data: instruction.try_to_vec().unwrap(),
+    }
+}
+
+/// Creates CreateGovernance instruction using optional voter weight addin
+#[allow(clippy::too_many_arguments)]
+pub fn create_club_governance(
+    program_id: &Pubkey,
+    // Accounts
+    realm: &Pubkey,
+    governed_account: &Pubkey,
+    payer: &Pubkey,
+    // Args
+    config: GovernanceConfig,
+) -> Instruction {
+    let governance_address = get_governance_address(program_id, realm, governed_account);
+
+    let accounts = vec![
+        AccountMeta::new_readonly(*realm, false),
+        AccountMeta::new(governance_address, false),
+        AccountMeta::new_readonly(*governed_account, false),
+        AccountMeta::new(*payer, true),
+        AccountMeta::new_readonly(system_program::id(), false),
+    ];
+
+    let instruction = GovernanceInstruction::CreateClubGovernance { config };
 
     Instruction {
         program_id: *program_id,
