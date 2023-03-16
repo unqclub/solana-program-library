@@ -11,7 +11,7 @@ use solana_program::{
 };
 
 use crate::{
-    constants::{UNQ_CLUB_PROGRAM_DEV, UNQ_CLUB_PROGRAM_TEST},
+    constants::{UNQ_CLUB_PROGRAM_DEV, UNQ_CLUB_PROGRAM_MAIN, UNQ_CLUB_PROGRAM_TEST},
     state::{
         enums::{ProposalState, TransactionExecutionStatus},
         governance::get_governance_data,
@@ -25,6 +25,8 @@ use crate::{
 pub fn process_execute_transaction(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
     let unq_club_program_dev: Pubkey = UNQ_CLUB_PROGRAM_DEV.parse().unwrap();
     let unq_club_program_test: Pubkey = UNQ_CLUB_PROGRAM_TEST.parse().unwrap();
+    let unq_club_program_main: Pubkey = UNQ_CLUB_PROGRAM_MAIN.parse().unwrap();
+
     let account_info_iter = &mut accounts.iter();
 
     let governance_info = next_account_info(account_info_iter)?; // 0
@@ -64,6 +66,7 @@ pub fn process_execute_transaction(program_id: &Pubkey, accounts: &[AccountInfo]
     // continuation of the execute_proposal ix on the club_program side we can continue the logic that changes club_program's state.
     if instruction_account_infos[0].key != &unq_club_program_dev
         && instruction_account_infos[0].key != &unq_club_program_test
+        && instruction_account_infos[0].key != &unq_club_program_main
     {
         let mut signers_seeds: Vec<&[&[u8]]> = vec![];
         // Sign the transaction using the governance PDA

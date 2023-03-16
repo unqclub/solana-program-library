@@ -3,6 +3,7 @@
 mod process_add_signatory;
 mod process_cancel_proposal;
 mod process_cast_vote;
+mod process_create_club_governance;
 mod process_create_governance;
 mod process_create_mint_governance;
 mod process_create_native_treasury;
@@ -32,6 +33,7 @@ use crate::instruction::GovernanceInstruction;
 use process_add_signatory::*;
 use process_cancel_proposal::*;
 use process_cast_vote::*;
+use process_create_club_governance::*;
 use process_create_governance::*;
 use process_create_mint_governance::*;
 use process_create_native_treasury::*;
@@ -212,6 +214,9 @@ pub fn process_instruction(
         }
         GovernanceInstruction::CreateNativeTreasury {} => {
             process_create_native_treasury(program_id, accounts)
+        }
+        GovernanceInstruction::CreateClubGovernance { config } => {
+            process_create_club_governance(program_id, accounts, config)
         }
     }
 }
