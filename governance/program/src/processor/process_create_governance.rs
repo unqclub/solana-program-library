@@ -1,13 +1,18 @@
 //! Program state processor
 
-use crate::state::{
-    enums::GovernanceAccountType,
-    governance::{
-        assert_valid_create_governance_args, get_governance_address_seeds, GovernanceConfig,
-        GovernanceV2,
+use crate::{
+    error::GovernanceError,
+    state::{
+        enums::GovernanceAccountType,
+        governance::{
+            assert_valid_create_governance_args, get_governance_address_seeds, GovernanceConfig,
+            GovernanceV2,
+        },
+        realm::get_realm_data,
+        token_owner_record::get_token_owner_record_data_for_realm,
     },
-    realm::get_realm_data,
 };
+use delegation_manager::check_authorization;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
@@ -50,6 +55,27 @@ pub fn process_create_governance(
         create_authority_info,
         account_info_iter, // realm_config_info 7, voter_weight_record_info 8
     )?;
+
+    let token_owner_record_data =
+        get_token_owner_record_data_for_realm(program_id, token_owner_record_info, realm_info.key)?;
+
+    // Proposal owner (TokenOwner) or its governance_delegate or representative must sign this transaction
+    let delegation_info = account_info_iter.next(); //9
+    if let Some(delegation) = delegation_info {
+        check_authorization(create_authority_info, payer_info, Some(delegation))?;
+        if !payer_info.is_signer {
+            return Err(GovernanceError::RepresentativeMustSign.into());
+        }
+    } else {
+        if realm_data.authority == Some(*create_authority_info.key) {
+            return if !create_authority_info.is_signer {
+                Err(GovernanceError::RealmAuthorityMustSign.into())
+            } else {
+                Ok(())
+            };
+        }
+        token_owner_record_data.assert_token_owner_or_delegate_is_signer(create_authority_info)?;
+    }
 
     let governance_data = GovernanceV2 {
         account_type: GovernanceAccountType::GovernanceV2,

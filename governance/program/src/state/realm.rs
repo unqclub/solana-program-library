@@ -1,7 +1,6 @@
 //! Realm Account
 
 use borsh::maybestd::io::Write;
-use delegation_manager::check_authorization;
 use std::slice::Iter;
 
 use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
@@ -236,32 +235,9 @@ impl RealmV2 {
         create_authority_info: &AccountInfo,
         account_info_iter: &mut Iter<AccountInfo>,
     ) -> Result<(), ProgramError> {
-        // Check if create_authority_info is realm_authority and if yes then it must signed the transaction
-
-        if self.authority == Some(*create_authority_info.key) {
-            return if !create_authority_info.is_signer {
-                Err(GovernanceError::RealmAuthorityMustSign.into())
-            } else {
-                Ok(())
-            };
-        }
-
         // If realm_authority hasn't signed then check if TokenOwner or Delegate or Representative signed and can crate governance
         let token_owner_record_data =
             get_token_owner_record_data_for_realm(program_id, token_owner_record_info, realm)?;
-
-        let master_info = account_info_iter.next(); //5
-        if let Some(master) = master_info {
-            let delegation_info = next_account_info(account_info_iter)?; //6
-
-            check_authorization(master, create_authority_info, Some(delegation_info))?;
-            if !create_authority_info.is_signer {
-                return Err(GovernanceError::RealmAuthorityMustSign.into());
-            }
-        } else {
-            token_owner_record_data
-                .assert_token_owner_or_delegate_is_signer(create_authority_info)?;
-        }
 
         let realm_config_info = next_account_info(account_info_iter)?;
 
