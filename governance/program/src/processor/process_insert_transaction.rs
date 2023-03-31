@@ -69,7 +69,7 @@ pub fn process_insert_transaction(
         &proposal_data.token_owner_record,
     )?;
 
-    let delegation_info = account_info_iter.next(); //9
+    let delegation_info = account_info_iter.next(); //8
     if let Some(delegation) = delegation_info {
         check_authorization(governance_authority_info, payer_info, Some(delegation))?;
         if !payer_info.is_signer {
