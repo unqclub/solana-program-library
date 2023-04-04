@@ -16,6 +16,7 @@ use delegation_manager::check_authorization;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
+    msg,
     pubkey::Pubkey,
     rent::Rent,
     sysvar::Sysvar,
@@ -60,19 +61,16 @@ pub fn process_create_governance(
         get_token_owner_record_data_for_realm(program_id, token_owner_record_info, realm_info.key)?;
 
     // Proposal owner (TokenOwner) or its governance_delegate or representative must sign this transaction
-    let delegation_info = account_info_iter.next(); //9
-    if let Some(delegation) = delegation_info {
-        check_authorization(create_authority_info, payer_info, Some(delegation))?;
+    if let Some(delegation_info) = account_info_iter.next() {
+        check_authorization(create_authority_info, payer_info, Some(delegation_info))?;
         if !payer_info.is_signer {
             return Err(GovernanceError::RepresentativeMustSign.into());
         }
     } else {
         if realm_data.authority == Some(*create_authority_info.key) {
-            return if !create_authority_info.is_signer {
-                Err(GovernanceError::RealmAuthorityMustSign.into())
-            } else {
-                Ok(())
-            };
+            if !create_authority_info.is_signer {
+                return Err(GovernanceError::RealmAuthorityMustSign.into());
+            }
         }
         token_owner_record_data.assert_token_owner_or_delegate_is_signer(create_authority_info)?;
     }
