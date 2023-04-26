@@ -485,6 +485,9 @@ pub enum GovernanceInstruction {
         #[allow(dead_code)]
         config: GovernanceConfig,
     },
+
+    /// The instruction to delete a governance program owned PDA
+    DeletePda,
 }
 
 /// Creates CreateRealm instruction
@@ -1659,6 +1662,29 @@ pub fn create_club_governance(
     ];
 
     let instruction = GovernanceInstruction::CreateClubGovernance { config };
+
+    Instruction {
+        program_id: *program_id,
+        accounts,
+        data: instruction.try_to_vec().unwrap(),
+    }
+}
+
+/// Creates DeletePda instruction
+pub fn delete_governance_pda(
+    program_id: &Pubkey,
+    // Accounts
+    signer: &Pubkey,
+    source: &Pubkey,
+    recepient: &Pubkey,
+) -> Instruction {
+    let accounts = vec![
+        AccountMeta::new_readonly(*signer, true),
+        AccountMeta::new(*source, false),
+        AccountMeta::new(*recepient, false),
+    ];
+
+    let instruction = GovernanceInstruction::DeletePda {};
 
     Instruction {
         program_id: *program_id,
