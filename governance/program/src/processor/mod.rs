@@ -12,6 +12,7 @@ mod process_create_proposal;
 mod process_create_realm;
 mod process_create_token_governance;
 mod process_create_token_owner_record;
+mod process_delete_pda;
 mod process_deposit_governing_tokens;
 mod process_execute_transaction;
 mod process_finalize_vote;
@@ -42,6 +43,7 @@ use process_create_proposal::*;
 use process_create_realm::*;
 use process_create_token_governance::*;
 use process_create_token_owner_record::*;
+use process_delete_pda::*;
 use process_deposit_governing_tokens::*;
 use process_execute_transaction::*;
 use process_finalize_vote::*;
@@ -218,5 +220,6 @@ pub fn process_instruction(
         GovernanceInstruction::CreateClubGovernance { config } => {
             process_create_club_governance(program_id, accounts, config)
         }
+        GovernanceInstruction::DeletePda {} => process_delete_pda(program_id, accounts),
     }
 }
