@@ -35,7 +35,7 @@ pub fn process_create_club_governance(
 
     let payer_info = next_account_info(account_info_iter)?; // 4
 
-    if payer_info.key != &UNQ_CLUB_AUTHORITY.parse::<Pubkey>().unwrap() {
+    if !payer_info.is_signer && payer_info.key != &UNQ_CLUB_AUTHORITY.parse::<Pubkey>().unwrap() {
         return Err(GovernanceError::InvalidAuthorityForRealm.into());
     }
 

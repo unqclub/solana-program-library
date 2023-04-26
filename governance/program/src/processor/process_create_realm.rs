@@ -47,18 +47,23 @@ pub fn process_create_realm(
 
     assert_valid_realm_config_args(&config_args)?;
 
-    create_spl_token_account_signed(
-        payer_info,
-        governance_token_holding_info,
-        &get_governing_token_holding_address_seeds(realm_info.key, governance_token_mint_info.key),
-        governance_token_mint_info,
-        realm_info,
-        program_id,
-        system_info,
-        spl_token_info,
-        rent_sysvar_info,
-        rent,
-    )?;
+    if governance_token_holding_info.data_is_empty() {
+        create_spl_token_account_signed(
+            payer_info,
+            governance_token_holding_info,
+            &get_governing_token_holding_address_seeds(
+                realm_info.key,
+                governance_token_mint_info.key,
+            ),
+            governance_token_mint_info,
+            realm_info,
+            program_id,
+            system_info,
+            spl_token_info,
+            rent_sysvar_info,
+            rent,
+        )?;
+    }
 
     let council_token_mint_address = if config_args.use_council_mint {
         let council_token_mint_info = next_account_info(account_info_iter)?; // 9
