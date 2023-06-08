@@ -1,6 +1,6 @@
 //! Constants
 /// Club program's address
-pub const UNQ_CLUB_PROGRAM: &str = "ZUAcS3XydQ3vpR94Zwzm9Xr2rk5afrdh38Ps8dXq1F7";
+pub const UNQ_CLUB_PROGRAM: &str = "HGDcuHYKhZPk9Nzw6knBsJrRCajKVzedxWJZW3u2AFP3";
 
 /// UNQ-Club program's authority
-pub const UNQ_CLUB_AUTHORITY: &str = "ZUAdiCnQcjaeGy74sydFEQ53xCpg6j4jn8bdLzgeur1";
+pub const UNQ_CLUB_AUTHORITY: &str = "HGDdPwEBd4HcwN1qJ2TSRb8cPLx2TjMcpyb11xzHT93e";
