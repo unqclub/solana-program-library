@@ -1,5 +1,6 @@
 //! Program state processor
 
+use delegation_manager::check_authorization;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     clock::Clock,
@@ -8,10 +9,13 @@ use solana_program::{
     sysvar::Sysvar,
 };
 
-use crate::state::{
-    enums::ProposalState, governance::get_governance_data_for_realm,
-    proposal::get_proposal_data_for_governance, realm::get_realm_data,
-    token_owner_record::get_token_owner_record_data_for_proposal_owner,
+use crate::{
+    error::GovernanceError,
+    state::{
+        enums::ProposalState, governance::get_governance_data_for_realm,
+        proposal::get_proposal_data_for_governance, realm::get_realm_data,
+        token_owner_record::get_token_owner_record_data_for_proposal_owner,
+    },
 };
 
 /// Processes CancelProposal instruction
@@ -23,6 +27,8 @@ pub fn process_cancel_proposal(program_id: &Pubkey, accounts: &[AccountInfo]) ->
     let proposal_info = next_account_info(account_info_iter)?; // 2
     let proposal_owner_record_info = next_account_info(account_info_iter)?; // 3
     let governance_authority_info = next_account_info(account_info_iter)?; // 4
+                                                                           //Added
+    let payer_info = next_account_info(account_info_iter)?; // 5
 
     let clock = Clock::get()?;
 
@@ -41,8 +47,26 @@ pub fn process_cancel_proposal(program_id: &Pubkey, accounts: &[AccountInfo]) ->
         &proposal_data.token_owner_record,
     )?;
 
-    proposal_owner_record_data
-        .assert_token_owner_or_delegate_is_signer(governance_authority_info)?;
+    let delegation_info = account_info_iter.next(); //6
+    if let Some(delegation) = delegation_info {
+        check_authorization(governance_authority_info, payer_info, Some(delegation))?;
+        if payer_info.is_signer {
+            if proposal_owner_record_data.governing_token_owner != *governance_authority_info.key {
+                return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
+            }
+
+            if let Some(governance_delegate) = proposal_owner_record_data.governance_delegate {
+                if &governance_delegate != governance_authority_info.key {
+                    return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
+                }
+            };
+        } else {
+            return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
+        }
+    } else {
+        proposal_owner_record_data
+            .assert_token_owner_or_delegate_is_signer(governance_authority_info)?;
+    }
 
     proposal_owner_record_data.decrease_outstanding_proposal_count();
     proposal_owner_record_data.serialize(&mut *proposal_owner_record_info.data.borrow_mut())?;

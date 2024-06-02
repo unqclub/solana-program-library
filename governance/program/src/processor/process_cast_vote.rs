@@ -1,5 +1,6 @@
 //! Program state processor
 
+use delegation_manager::check_authorization;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     clock::Clock,
@@ -90,8 +91,28 @@ pub fn process_cast_vote(
             &governance_data.realm,
             vote_governing_token_mint_info.key,
         )?;
-    voter_token_owner_record_data
-        .assert_token_owner_or_delegate_is_signer(governance_authority_info)?;
+
+    if payer_info.key != governance_authority_info.key {
+        let delegation_info = next_account_info(account_info_iter)?;
+        check_authorization(governance_authority_info, payer_info, Some(delegation_info))?;
+        if payer_info.is_signer {
+            if voter_token_owner_record_data.governing_token_owner != *governance_authority_info.key
+            {
+                return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
+            }
+
+            if let Some(governance_delegate) = voter_token_owner_record_data.governance_delegate {
+                if &governance_delegate == governance_authority_info.key {
+                    return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
+                }
+            };
+        } else {
+            return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
+        }
+    } else {
+        voter_token_owner_record_data
+            .assert_token_owner_or_delegate_is_signer(governance_authority_info)?;
+    }
 
     // Update TokenOwnerRecord vote counts
     voter_token_owner_record_data.unrelinquished_votes_count = voter_token_owner_record_data

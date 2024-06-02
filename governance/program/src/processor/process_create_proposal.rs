@@ -1,5 +1,6 @@
 //! Program state processor
 
+use delegation_manager::check_authorization;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     clock::Clock,
@@ -77,10 +78,6 @@ pub fn process_create_proposal(
         realm_info.key,
     )?;
 
-    // Proposal owner (TokenOwner) or its governance_delegate must sign this transaction
-    proposal_owner_record_data
-        .assert_token_owner_or_delegate_is_signer(governance_authority_info)?;
-
     let realm_config_info = next_account_info(account_info_iter)?; // 10
 
     let voter_weight = proposal_owner_record_data.resolve_voter_weight(
@@ -92,6 +89,28 @@ pub fn process_create_proposal(
         VoterWeightAction::CreateProposal,
         governance_info.key,
     )?;
+
+    // Proposal owner (TokenOwner) or its governance_delegate or representative must sign this transaction
+    let delegation_info = account_info_iter.next(); //9
+    if let Some(delegation) = delegation_info {
+        check_authorization(governance_authority_info, payer_info, Some(delegation))?;
+        if payer_info.is_signer {
+            if proposal_owner_record_data.governing_token_owner != *governance_authority_info.key {
+                return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
+            }
+
+            if let Some(governance_delegate) = proposal_owner_record_data.governance_delegate {
+                if &governance_delegate == governance_authority_info.key {
+                    return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
+                }
+            };
+        } else {
+            return Err(GovernanceError::GoverningTokenOwnerOrDelegateMustSign.into());
+        }
+    } else {
+        proposal_owner_record_data
+            .assert_token_owner_or_delegate_is_signer(governance_authority_info)?;
+    }
 
     // Ensure proposal owner (TokenOwner) has enough tokens to create proposal and no outstanding proposals
     proposal_owner_record_data.assert_can_create_proposal(
